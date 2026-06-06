@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr. Deeksha Bhardwaj — Critical Care Study Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --surface: #141828;
+    --surface2: #1c2138;
+    --border: rgba(255,255,255,0.07);
+    --accent: #e8c97a;
+    --accent2: #7ab8e8;
+    --accent3: #e87a9a;
+    --accent4: #7ae8b8;
+    --text: #e8e6f0;
+    --muted: #7a7a9a;
+    --phase1: #7ab8e8;
+    --phase2: #e8c97a;
+    --done: #7ae8b8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content:'';
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:
+      radial-gradient(ellipse 80% 40% at 20% 10%, rgba(122,184,232,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(232,201,122,0.05) 0%, transparent 60%);
+    pointer-events:none; z-index:0;
+  }
+
+  .container { max-width:1100px; margin:0 auto; padding:2rem 1.5rem; position:relative; z-index:1; }
+
+  /* Header */
+  .header { text-align:center; padding:3rem 0 2.5rem; }
+  .header-tag {
+    display:inline-block;
+    font-family:'DM Mono', monospace;
+    font-size:0.65rem;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--accent);
+    border:1px solid rgba(232,201,122,0.3);
+    padding:0.3rem 1rem;
+    border-radius:2rem;
+    margin-bottom:1.2rem;
+  }
+  .header h1 {
+    font-family:'Playfair Display', serif;
+    font-size:clamp(2rem,5vw,3.2rem);
+    font-weight:700;
+    line-height:1.15;
+    margin-bottom:0.5rem;
+  }
+  .header h1 em { font-style:italic; color:var(--accent); }
+  .header p { color:var(--muted); font-size:0.9rem; }
+
+  /* Phases Banner */
+  .phases {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:1rem;
+    margin:2rem 0;
+  }
+  .phase-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:1rem;
+    padding:1.2rem 1.5rem;
+    position:relative;
+    overflow:hidden;
+  }
+  .phase-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:3px;
+    border-radius:1rem 1rem 0 0;
+  }
+  .phase-card.p1::before { background:var(--phase1); }
+  .phase-card.p2::before { background:var(--phase2); }
+  .phase-card.exam::before { background:var(--accent3); }
+  .phase-label {
+    font-family:'DM Mono', monospace;
+    font-size:0.6rem;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:0.4rem;
+  }
+  .phase-title { font-weight:600; font-size:0.95rem; margin-bottom:0.25rem; }
+  .phase-date { font-size:0.8rem; color:var(--accent); font-family:'DM Mono',monospace; }
+  .phase-sub { font-size:0.75rem; color:var(--muted); margin-top:0.3rem; }
+
+  /* Stats bar */
+  .stats-bar {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:1rem;
+    padding:1.5rem 2rem;
+    display:flex;
+    align-items:center;
+    gap:2rem;
+    margin-bottom:2rem;
+    flex-wrap:wrap;
+  }
+  .stat { text-align:center; }
+  .stat-num {
+    font-family:'Playfair Display', serif;
+    font-size:2rem;
+    font-weight:700;
+    color:var(--accent);
+    display:block;
+    line-height:1;
+  }
+  .stat-label { font-size:0.7rem; color:var(--muted); letter-spacing:0.05em; text-transform:uppercase; margin-top:0.2rem; }
+  .stat-divider { width:1px; height:3rem; background:var(--border); }
+  .progress-section { flex:1; min-width:200px; }
+  .progress-label { display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); margin-bottom:0.5rem; }
+  .progress-track {
+    height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%;
+    background:linear-gradient(90deg, var(--phase1), var(--accent));
+    border-radius:4px;
+    transition:width 0.6s ease;
+  }
+  .today-btn {
+    background:linear-gradient(135deg, rgba(122,184,232,0.15), rgba(232,201,122,0.1));
+    border:1px solid rgba(122,184,232,0.3);
+    color:var(--accent2);
+    padding:0.6rem 1.4rem;
+    border-radius:2rem;
+    cursor:pointer;
+    font-family:'DM Sans', sans-serif;
+    font-size:0.8rem;
+    font-weight:600;
+    letter-spacing:0.05em;
+    transition:all 0.2s;
+    white-space:nowrap;
+  }
+  .today-btn:hover { background:rgba(122,184,232,0.2); transform:translateY(-1px); }
+
+  /* Filters */
+  .filters {
+    display:flex; gap:0.6rem; margin-bottom:1.5rem; flex-wrap:wrap;
+    align-items:center;
+  }
+  .filter-label { font-size:0.75rem; color:var(--muted); letter-spacing:0.05em; margin-right:0.3rem; }
+  .filter-btn {
+    background:var(--surface2); border:1px solid var(--border);
+    color:var(--muted); padding:0.35rem 0.9rem;
+    border-radius:2rem; cursor:pointer; font-size:0.75rem; font-family:'DM Sans',sans-serif;
+    transition:all 0.2s; letter-spacing:0.02em;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background:rgba(232,201,122,0.12);
+    border-color:rgba(232,201,122,0.4);
+    color:var(--accent);
+  }
+
+  /* Section Groups */
+  .volume-header {
+    display:flex; align-items:center; gap:1rem;
+    margin:2.5rem 0 1rem;
+  }
+  .volume-badge {
+    background:linear-gradient(135deg, rgba(232,201,122,0.2), rgba(232,201,122,0.05));
+    border:1px solid rgba(232,201,122,0.3);
+    color:var(--accent);
+    font-family:'DM Mono', monospace;
+    font-size:0.65rem;
+    letter-spacing:0.15em;
+    padding:0.3rem 0.8rem;
+    border-radius:0.4rem;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .volume-line { flex:1; height:1px; background:var(--border); }
+  .volume-title { font-family:'Playfair Display', serif; font-size:1.1rem; color:var(--muted); white-space:nowrap; }
+
+  /* Day Cards */
+  .week-label {
+    font-family:'DM Mono', monospace;
+    font-size:0.6rem;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:1.5rem 0 0.6rem;
+    padding-left:0.5rem;
+    border-left:2px solid var(--phase1);
+  }
+  .week-label.p2-week { border-color:var(--phase2); }
+  .week-label.exam-week { border-color:var(--accent3); }
+
+  .day-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:0.8rem;
+    margin-bottom:0.7rem;
+    overflow:hidden;
+    transition:all 0.2s;
+    cursor:pointer;
+  }
+  .day-card:hover { border-color:rgba(255,255,255,0.12); transform:translateY(-1px); }
+  .day-card.today-highlight {
+    border-color:rgba(122,184,232,0.4);
+    box-shadow:0 0 20px rgba(122,184,232,0.08);
+  }
+  .day-card.completed {
+    border-color:rgba(122,232,184,0.25);
+    background:rgba(122,232,184,0.03);
+  }
+  .day-card.completed .day-header { opacity:0.7; }
+
+  .day-header {
+    display:flex; align-items:center; gap:1rem;
+    padding:0.9rem 1.2rem;
+  }
+  .day-check {
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:all 0.3s; font-size:0.7rem;
+    cursor:pointer;
+  }
+  .day-card.completed .day-check {
+    background:var(--done); border-color:var(--done); color:#0d1a12;
+  }
+  .day-num {
+    font-family:'DM Mono', monospace;
+    font-size:0.65rem;
+    color:var(--muted);
+    min-width:60px;
+  }
+  .day-num .day-date { font-size:0.75rem; color:var(--text); font-weight:500; display:block; }
+  .day-topics { flex:1; }
+  .day-section-name {
+    font-size:0.85rem; font-weight:500; color:var(--text);
+    display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;
+  }
+  .topic-tag {
+    display:inline-block;
+    font-size:0.62rem;
+    padding:0.1rem 0.45rem;
+    border-radius:0.3rem;
+    font-family:'DM Mono', monospace;
+    letter-spacing:0.04em;
+  }
+  .tag-p1 { background:rgba(122,184,232,0.12); color:var(--phase1); }
+  .tag-p2 { background:rgba(232,201,122,0.12); color:var(--phase2); }
+  .tag-exam { background:rgba(232,122,154,0.12); color:var(--accent3); }
+  .day-subtopics {
+    font-size:0.75rem; color:var(--muted); margin-top:0.2rem;
+    line-height:1.5;
+  }
+  .day-right { display:flex; align-items:center; gap:0.8rem; }
+  .day-load {
+    font-size:0.7rem; font-family:'DM Mono', monospace;
+    padding:0.2rem 0.5rem; border-radius:0.3rem;
+  }
+  .load-light { background:rgba(122,232,184,0.1); color:var(--accent4); }
+  .load-medium { background:rgba(232,201,122,0.1); color:var(--accent); }
+  .load-heavy { background:rgba(232,122,154,0.1); color:var(--accent3); }
+  .day-expand { color:var(--muted); font-size:0.7rem; transition:transform 0.2s; }
+  .day-card.open .day-expand { transform:rotate(180deg); }
+
+  .day-body {
+    display:none; padding:0 1.2rem 1rem;
+    border-top:1px solid var(--border);
+  }
+  .day-card.open .day-body { display:block; }
+  .note-area {
+    width:100%; background:rgba(255,255,255,0.03);
+    border:1px solid var(--border); border-radius:0.5rem;
+    padding:0.6rem 0.8rem; color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:0.8rem; resize:vertical; min-height:60px;
+    outline:none; margin-top:0.7rem;
+  }
+  .note-area:focus { border-color:rgba(122,184,232,0.3); }
+  .note-area::placeholder { color:var(--muted); }
+
+  .checklist { margin-top:0.7rem; }
+  .checklist-item {
+    display:flex; align-items:flex-start; gap:0.6rem;
+    padding:0.35rem 0; border-bottom:1px solid rgba(255,255,255,0.04);
+    cursor:pointer;
+  }
+  .checklist-item:last-child { border-bottom:none; }
+  .mini-check {
+    width:14px; height:14px; border-radius:3px;
+    border:1.5px solid var(--border); flex-shrink:0; margin-top:1px;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.2s; font-size:0.55rem;
+  }
+  .checklist-item.done .mini-check { background:var(--done); border-color:var(--done); color:#0d1a12; }
+  .checklist-item.done .item-text { text-decoration:line-through; color:var(--muted); }
+  .item-text { font-size:0.78rem; color:var(--text); line-height:1.4; }
+
+  /* Motivation Banner */
+  .motivation {
+    background:linear-gradient(135deg, rgba(122,184,232,0.08), rgba(232,201,122,0.06));
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:1rem;
+    padding:1.5rem 2rem;
+    margin:2rem 0;
+    display:flex; align-items:center; gap:1.5rem;
+  }
+  .motivation-icon { font-size:2.5rem; }
+  .motivation-text { flex:1; }
+  .motivation-text h3 { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:0.3rem; }
+  .motivation-text p { font-size:0.8rem; color:var(--muted); }
+
+  /* Celebration overlay */
+  .celebrate {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:var(--surface); border:1px solid rgba(122,232,184,0.4);
+    border-radius:1.5rem; padding:2rem 3rem;
+    text-align:center; z-index:100;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(122,232,184,0.1);
+    display:none; animation:popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+  .celebrate.show { display:block; }
+  @keyframes popIn {
+    from { transform:translate(-50%,-50%) scale(0.5); opacity:0; }
+    to   { transform:translate(-50%,-50%) scale(1); opacity:1; }
+  }
+  .celebrate h2 { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--done); }
+  .celebrate p { color:var(--muted); margin-top:0.5rem; font-size:0.85rem; }
+  .celebrate-emoji { font-size:3rem; margin-bottom:0.5rem; }
+
+  .overlay-bg {
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; display:none;
+    backdrop-filter:blur(4px);
+  }
+  .overlay-bg.show { display:block; }
+
+  /* Hidden sections */
+  .section-hidden { display:none; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  /* Responsive */
+  @media(max-width:600px) {
+    .phases { grid-template-columns:1fr; }
+    .stats-bar { gap:1rem; }
+    .stat-divider { display:none; }
+    .day-subtopics { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay-bg" id="overlayBg" onclick="closeCelebrate()"></div>
+<div class="celebrate" id="celebrateBox">
+  <div class="celebrate-emoji" id="celebrateEmoji">🎉</div>
+  <h2 id="celebrateTitle">Day Complete!</h2>
+  <p id="celebrateMsg">You're one step closer to mastering Critical Care.</p>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-tag">📚 Critical Care Medicine — Personal Study Planner</div>
+    <h1>Dr. <em>Deeksha Bhardwaj</em></h1>
+    <p style="font-family:'Playfair Display',serif; font-size:1.05rem; font-style:italic; color:var(--accent); margin:0.7rem auto 0.4rem; max-width:620px; line-height:1.6;">
+      "The critical care unit is where science meets compassion.<br>Master both — and you become unstoppable."
+    </p>
+    <p style="color:var(--muted); font-size:0.82rem; margin-top:0.6rem;">3 Volumes · 29 Sections · Exam: 26–28 September 2026</p>
+  </div>
+
+  <!-- Dedication Card -->
+  <div style="background:linear-gradient(135deg,rgba(232,201,122,0.08),rgba(122,184,232,0.05));border:1px solid rgba(232,201,122,0.25);border-radius:1rem;padding:1.4rem 2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem;">
+    <div style="font-size:3rem;flex-shrink:0;">🩺</div>
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">This tracker belongs to</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--accent);font-weight:700;">Dr. Deeksha Bhardwaj</div>
+      <div style="font-size:0.76rem;color:var(--muted);margin-top:0.2rem;">MD Anesthesia &nbsp;·&nbsp; DM Critical Care &nbsp;·&nbsp; Future Master of the ICU</div>
+      <div style="font-size:0.82rem;color:var(--text);margin-top:0.55rem;font-style:italic;opacity:0.85;font-family:'Playfair Display',serif;">"The best doctors are not made in a day — they are made in a thousand mornings of showing up."</div>
+    </div>
+  </div>
+
+  <!-- Phase Cards -->
+  <div class="phases">
+    <div class="phase-card p1">
+      <div class="phase-label">Phase 1</div>
+      <div class="phase-title">📖 First Reading + Notes</div>
+      <div class="phase-date">7 Jun → 7th July 2026</div>
+      <div class="phase-sub">Sections 1–29 with written notes</div>
+    </div>
+    <div class="phase-card p2">
+      <div class="phase-label">Phase 2</div>
+      <div class="phase-title">🔁 First Revision + Misc</div>
+      <div class="phase-date">8th July → 30th July 2026</div>
+      <div class="phase-sub">Full revision + weak topic deep-dives</div>
+    </div>
+    <div class="phase-card exam">
+      <div class="phase-label">Phase 3</div>
+      <div class="phase-title">⚡ Final Prep + Exam</div>
+      <div class="phase-date">Aug → 26–28 Sep 2026</div>
+      <div class="phase-sub">Rapid revision · Mock tests · Exams</div>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-num" id="daysLeft">32</span>
+      <div class="stat-label">Days to<br>7 July</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num" id="totalDone">0</span>
+      <div class="stat-label">Topics<br>Completed</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">29</span>
+      <div class="stat-label">Total<br>Sections</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>Overall Progress</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <button class="today-btn" onclick="jumpToday()">→ Jump to Today</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <span class="filter-label">SHOW:</span>
+    <button class="filter-btn active" onclick="filterDays('all', this)">All Days</button>
+    <button class="filter-btn" onclick="filterDays('pending', this)">Pending</button>
+    <button class="filter-btn" onclick="filterDays('done', this)">Completed</button>
+    <button class="filter-btn" onclick="filterDays('phase1', this)">Phase 1</button>
+    <button class="filter-btn" onclick="filterDays('phase2', this)">Phase 2</button>
+  </div>
+
+  <div id="daysList"></div>
+
+</div>
+
+<script>
+// ============================================================
+//  SYLLABUS DATA — All 29 Sections mapped to daily schedule
+// ============================================================
+const phases = {
+  p1: { label:'P1', cls:'tag-p1' },
+  p2: { label:'P2', cls:'tag-p2' },
+  exam: { label:'EXAM', cls:'tag-exam' }
+};
+
+// Generate dates starting June 6, 2026
+function getDate(dayIndex) {
+  const start = new Date(2026, 5, 7); // June 7 — Dr. Deeksha's start date
+  const d = new Date(start);
+  d.setDate(d.getDate() + dayIndex);
+  return d;
+}
+
+function fmtDate(d) {
+  return d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+}
+
+// PHASE 1: June 6 – July 7 (32 days)
+// 29 sections spread across 32 days, with buffer days
+const phase1Days = [
+  {
+    date: 0, phase:'p1',
+    section: 'Section 1–2: Foundations of Critical Care + History & Philosophy',
+    topics: ['Principles of Critical Care', 'History of Critical Care', 'Philosophy of ICU', 'Transport of Critically Ill'],
+    load:'medium'
+  },
+  {
+    date: 1, phase:'p1',
+    section: 'Section 3: Monitoring Basics',
+    topics: ['Hemodynamic Monitoring Principles', 'ECG Monitoring', 'Temperature & Urine Monitoring', 'Sedation Monitoring'],
+    load:'medium'
+  },
+  {
+    date: 2, phase:'p1',
+    section: 'Section 3 (contd): Advanced Monitoring',
+    topics: ['Pulmonary Artery Catheter', 'Cardiac Output Monitoring', 'Cerebral Monitoring', 'Coagulation Monitoring'],
+    load:'heavy'
+  },
+  {
+    date: 3, phase:'p1',
+    section: 'Section 4: Procedures — Airway & Vascular Access',
+    topics: ['Endotracheal Intubation', 'Rapid Sequence Intubation', 'Difficult Airway Management', 'Central Line Insertion'],
+    load:'heavy'
+  },
+  {
+    date: 4, phase:'p1',
+    section: 'Section 4 (contd): ICU Procedures',
+    topics: ['Arterial Line', 'Chest Drain', 'Pericardiocentesis', 'Lumbar Puncture', 'Tracheostomy'],
+    load:'heavy'
+  },
+  {
+    date: 5, phase:'p1',
+    section: 'Section 5: Ultrasound in ICU',
+    topics: ['Principles of POCUS', 'Lung Ultrasound', 'Cardiac Ultrasound (FATE/FOCUS)', 'Abdominal & Vascular POCUS', 'Airway Sonography'],
+    load:'heavy'
+  },
+  {
+    date: 6, phase:'p1',
+    section: '🔄 BUFFER / CATCH-UP DAY 1',
+    topics: ['Revisit any pending Section 1–5 topics', 'Organise notes', 'Self-test key concepts'],
+    load:'light'
+  },
+  {
+    date: 7, phase:'p1',
+    section: 'Section 6: ICU Pharmacology — Part 1',
+    topics: ['PK/PD Principles of Antibiotics', 'Bronchodilators', 'Pulmonary Vasodilators', 'Vasopressors', 'Inotropes', 'Vasodilators'],
+    load:'heavy'
+  },
+  {
+    date: 8, phase:'p1',
+    section: 'Section 6: ICU Pharmacology — Part 2',
+    topics: ['Antihypertensives', 'Thrombolytics', 'Anticoagulants', 'Antiplatelet Agents', 'Hemostatic Agents', 'Clotting Factors'],
+    load:'heavy'
+  },
+  {
+    date: 9, phase:'p1',
+    section: 'Section 6: ICU Pharmacology — Part 3',
+    topics: ['Antiarrhythmics', 'Sedatives & Hypnotics', 'Neuromuscular Blockers', 'Antiepileptics', 'Antibiotics in ICU', 'Antifungals', 'Antivirals'],
+    load:'heavy'
+  },
+  {
+    date: 10, phase:'p1',
+    section: 'Section 6: ICU Pharmacology — Part 4',
+    topics: ['Antimalarials', 'Antioxidants', 'Diuretics & Osmotic Agents', 'Antidotes & Chelating Agents', 'Hemopoietic Agents', 'Immunomodulators', 'Crystalloids', 'Colloids'],
+    load:'heavy'
+  },
+  {
+    date: 11, phase:'p1',
+    section: 'Section 7: Organ Support Systems',
+    topics: ['Mechanical Ventilation Basics', 'Modes of Ventilation', 'HFOV', 'Prone Positioning', 'ECMO', 'Renal Replacement Therapy'],
+    load:'heavy'
+  },
+  {
+    date: 12, phase:'p1',
+    section: 'Section 8: Communication and Documentation',
+    topics: ['Handover in the ICU', 'Good Transfer Note', 'Family Counseling', 'Multidisciplinary Team Meeting', 'Procedure Notes & AE Recording', 'End-of-life Decisions', 'Conflict Resolution', 'Informed Consent'],
+    load:'medium'
+  },
+  {
+    date: 13, phase:'p1',
+    section: '🔄 BUFFER / CATCH-UP DAY 2 + Sections 1–8 Review',
+    topics: ['Quick flashcard revision Sec 1–8', 'Pending notes completion', 'Mind maps for key drug classes'],
+    load:'light'
+  },
+  {
+    date: 14, phase:'p1',
+    section: 'Section 9: Organizational Issues & Human Resources',
+    topics: ['ICU Design & Layout', 'ICU Staffing & Rostering', 'Economic Aspects', 'Air Handling & Isolation', 'Pandemic Preparedness', 'Mass Casualty Response'],
+    load:'medium'
+  },
+  {
+    date: 15, phase:'p1',
+    section: 'Section 9 (contd) + Section 10: EBM',
+    topics: ['Burnout Mitigation', 'Auditing Patient Safety/Outcome', 'ICU Accreditation', 'Equity & Bias Mitigation', 'Types of Data & Distribution', 'Study Designs', 'Statistical Tests', 'RCT Interpretation'],
+    load:'medium'
+  },
+  {
+    date: 16, phase:'p1',
+    section: 'Section 11: Infection Control & Environmental Safety',
+    topics: ['Isolation Principles', 'HAP Prevention & Audit', 'CLABSI/CRBSI Prevention', 'CAUTI Prevention', 'SSI Prevention', 'Environmental Safety in ICU', 'PPE', 'Infection Control in Immunocompromised'],
+    load:'medium'
+  },
+  {
+    date: 17, phase:'p1',
+    section: 'Section 12: Fluids & Electrolytes — Part 1',
+    topics: ['Fluid Compartments & Distribution', 'IV Fluids for Resuscitation', 'Fluid Accumulation Syndrome', 'Maintenance & Replacement Fluids', 'Fluid Stewardship', 'Deresuscitation'],
+    load:'medium'
+  },
+  {
+    date: 18, phase:'p1',
+    section: 'Section 12: Fluids & Electrolytes — Part 2',
+    topics: ['Hyponatremia', 'Hypernatremia', 'Hypokalemia', 'Hyperkalemia', 'Hypocalcemia', 'Hypercalcemia', 'Mg Homeostasis Disorders', 'Phosphate Homeostasis Disorders'],
+    load:'medium'
+  },
+  {
+    date: 19, phase:'p1',
+    section: 'Section 13: Respiratory Issues — Part 1',
+    topics: ['Severe CAP', 'Pneumonia in Immunocompromised', 'ARDS', 'Acute Severe Asthma', 'COPD Exacerbation', 'Alveolar Hemorrhage', 'Empyema & Lung Abscess'],
+    load:'heavy'
+  },
+  {
+    date: 20, phase:'p1',
+    section: 'Section 13: Respiratory Issues — Part 2',
+    topics: ['Bronchopleural Fistula', 'Oxygen Therapy Principles', 'Invasive MV Principles', 'Noninvasive MV', 'High-flow Nasal Oxygen', 'Monitoring on Ventilatory Support', 'Asynchrony', 'Aerosolized Drug Delivery'],
+    load:'heavy'
+  },
+  {
+    date: 21, phase:'p1',
+    section: 'Section 13: Respiratory Issues — Part 3 + 14 Intro',
+    topics: ['Weaning & Liberation from MV', 'ECMO (Resp)', 'ECCO2R', 'Restrictive Lung Disease', 'OHS', 'Ventilator-induced Lung Injury'],
+    load:'heavy'
+  },
+  {
+    date: 22, phase:'p1',
+    section: '🔄 BUFFER DAY 3 — Respiratory Focus',
+    topics: ['Review all Section 13 notes', 'Ventilation modes mind map', 'ARDS Berlin criteria quick cards'],
+    load:'light'
+  },
+  {
+    date: 23, phase:'p1',
+    section: 'Section 14: Cardiovascular Issues — Part 1',
+    topics: ['Non-invasive Hemodynamic Monitoring', 'Acute Coronary Syndromes', 'Tachyarrhythmias', 'Bradyarrhythmias', 'Cardiogenic Shock', 'Pulmonary Thromboembolism'],
+    load:'heavy'
+  },
+  {
+    date: 24, phase:'p1',
+    section: 'Section 14: Cardiovascular Issues — Part 2',
+    topics: ['Invasive Hemodynamic Monitoring', 'Non-thrombotic PE', 'Acute Decompensated Heart Failure', 'Mechanical Circulatory Support', 'Toxic Myocarditis', 'Cardiorenal Syndromes', 'Pericardial Effusion & Tamponade'],
+    load:'heavy'
+  },
+  {
+    date: 25, phase:'p1',
+    section: 'Section 14 (contd) + Section 15: Renal Diseases',
+    topics: ['Stress Cardiomyopathy', 'Acute Aortic Syndromes', 'Infective/Non-infective Endocarditis', 'Hypertensive Emergencies', 'Valvular Heart Diseases', 'AKI Pathogenesis & Diagnosis'],
+    load:'heavy'
+  },
+  {
+    date: 26, phase:'p1',
+    section: 'Section 15: Renal Diseases (contd)',
+    topics: ['Principles of RRT', 'Biomarkers of AKI', 'Peritoneal Dialysis', 'Therapeutic Plasma Exchange', 'Drug Dosing in AKI & RRT', 'RRT as Part of ECOS', 'UTI & Pyelonephritis', 'Sepsis-AKI', 'Drug-induced Kidney Injury'],
+    load:'heavy'
+  },
+  {
+    date: 27, phase:'p1',
+    section: 'Section 16: Neurocritical Care — Part 1',
+    topics: ['Non-invasive Neuromonitoring', 'Invasive Neuromonitoring', 'EEG Interpretation', 'Nerve Conduction Studies', 'Targeted Temperature Management', 'Acute Ischemic Stroke', 'Hemorrhagic Stroke'],
+    load:'heavy'
+  },
+  {
+    date: 28, phase:'p1',
+    section: 'Section 16: Neurocritical Care — Part 2',
+    topics: ['Aneurysmal SAH', 'Meningitis & Encephalitis', 'Nosocomial Meningitis', 'Autoimmune Encephalitis', 'GBS/AIDP', 'Myasthenic Crisis', 'Critical Illness Polyneuromyopathy', 'Delirium & Agitation'],
+    load:'heavy'
+  },
+  {
+    date: 29, phase:'p1',
+    section: 'Section 17: Gastrohepatology — Part 1',
+    topics: ['Non-variceal Upper GI Bleed', 'Variceal Upper GI Bleed', 'Lower GI Bleed', 'Stress Ulcer Prophylaxis', 'Selective Digestive Decontamination', 'Acute Liver Failure'],
+    load:'heavy'
+  },
+  {
+    date: 30, phase:'p1',
+    section: 'Section 17 (contd): Gastrohepatology Part 2',
+    topics: ['Acute on Chronic Liver Disease', 'Spontaneous Bacterial Peritonitis', 'Acute Mesenteric Ischemia', 'Severe Acute Pancreatitis', 'Diarrhea in ICU', 'Hepatorenal Syndrome', 'Drug-induced Liver Injury', 'High Output Intestinal Fistula'],
+    load:'heavy'
+  },
+  {
+    date: 31, phase:'p1',
+    section: '🏆 PHASE 1 COMPLETION DAY — Final Push',
+    topics: ['Review any remaining topics', 'Complete all notes', 'Organise section-wise summaries', '🎉 Celebrate Phase 1 completion!'],
+    load:'light'
+  },
+  // ============ PHASE 2: July 8 – July 30 (23 days) ============
+  {
+    date: 32, phase:'p2',
+    section: 'Section 18: Infections — Part 1',
+    topics: ['Antimicrobial Therapy Principles', 'Febrile Neutropenia', 'Skin & Soft Tissue Infections', 'Pulmonary TB in ICU', 'Extrapulmonary TB', 'Non-tubercular Mycobacterial Infections'],
+    load:'medium'
+  },
+  {
+    date: 33, phase:'p2',
+    section: 'Section 18: Infections — Part 2',
+    topics: ['Infections in Immunocompromised', 'Clostridial Infection', 'Malaria', 'Dengue', 'Leptospirosis', 'Scrub Typhus', 'Melioidosis'],
+    load:'medium'
+  },
+  {
+    date: 34, phase:'p2',
+    section: 'Section 18: Infections — Part 3 (MDR + Fungal)',
+    topics: ['Systemic Fungal Infections', 'Mucormycosis', 'MDR Gram-positive Cocci', 'MDR Gram-negative Bacilli', 'Bone & Joint Infections', 'Bloodstream Infections', 'Enteric Fever in ICU', 'Rabies', 'Tetanus'],
+    load:'heavy'
+  },
+  {
+    date: 35, phase:'p2',
+    section: 'Section 19: Trauma & Environmental Injuries',
+    topics: ['Polytrauma Approach', 'Traumatic Brain Injury', 'Traumatic Spine Injury', 'Thoracic Trauma', 'Blunt & Penetrating Abdominal Trauma', 'Pelvic Trauma'],
+    load:'heavy'
+  },
+  {
+    date: 36, phase:'p2',
+    section: 'Section 19 (contd): Environmental Injuries',
+    topics: ['Burns, Scalds & Frostbite', 'Heat Stroke', 'Drowning', 'High-altitude Pulmonary Edema', 'Decompression Sickness', 'Rhabdomyolysis'],
+    load:'medium'
+  },
+  {
+    date: 37, phase:'p2',
+    section: 'Section 20: Toxicology & Envenomations — Part 1',
+    topics: ['General Approach to Poisoned Victim', 'Toxidromes', 'Gut Decontamination', 'Extracorporeal Blood Purification', 'Organophosphate & Carbamate Poisoning', 'Rodenticide Poisoning'],
+    load:'heavy'
+  },
+  {
+    date: 38, phase:'p2',
+    section: 'Section 20: Toxicology — Part 2',
+    topics: ['Tricyclic Antidepressant OD', 'Sedative-hypnotic OD', 'Beta-blocker & CCB OD', 'Paraquat Poisoning', 'Super Vasmol Poisoning', 'Acetaminophen OD', 'Snakebite', 'Scorpion Sting', 'Bee/Wasp Sting', 'Corrosive Ingestion', 'Methemoglobinemia', 'CO Poisoning'],
+    load:'heavy'
+  },
+  {
+    date: 39, phase:'p2',
+    section: 'Section 21: Obstetrics Critical Care',
+    topics: ['Physiological Changes in Pregnancy', 'Hypertensive Disorders of Pregnancy', 'Microangiopathic Hemolytic Anemia', 'Peripartum Sepsis', 'Peripartum Cardiomyopathy', 'Clotting Catastrophes', 'Liver Dysfunction in Pregnancy', 'Maternal Cardiac Arrest'],
+    load:'medium'
+  },
+  {
+    date: 40, phase:'p2',
+    section: 'Section 22: Hemato-oncology',
+    topics: ['HUS/TTP/MAHA', 'DIC', 'Transfusion Thresholds', 'Tumor Lysis Syndrome', 'CAR-T Therapy Implications', 'Drug-induced Marrow Dysfunction', 'Sickle Cell Crisis', 'HLH/MAS', 'Transfusion-associated GVHD'],
+    load:'heavy'
+  },
+  {
+    date: 41, phase:'p2',
+    section: 'Section 23–24: Connective Tissue Disorders + Endocrine',
+    topics: ['SLE & Lupus Flare', 'Pulmonary-renal Syndrome', 'Vasculitic Crisis', 'CAPS', 'DKA & Euglycemic DKA', 'Hyperglycemic Hyperosmolar Syndrome', 'Adrenal Insufficiency'],
+    load:'heavy'
+  },
+  {
+    date: 42, phase:'p2',
+    section: 'Section 24 (contd): Endocrine + Section 25: Nutrition',
+    topics: ['Thyrotoxic Crisis', 'Myxedema Coma', 'SIADH', 'Ovarian Hyperstimulation Syndrome', 'Nutritional Assessment', 'Enteral Nutrition Principles', 'Parenteral Nutrition', 'Short Gut Syndrome', 'Refeeding Syndrome'],
+    load:'heavy'
+  },
+  {
+    date: 43, phase:'p2',
+    section: 'Section 26: Surgical Critical Care',
+    topics: ['Perioperative Intensive Care', 'Perioperative Analgesia & Sedation', 'Perioperative Respiratory Failure', 'Post-cardiac Surgery Care', 'Post-neurosurgical Care', 'Perioperative Fluid Therapy', 'Perioperative AKI'],
+    load:'medium'
+  },
+  {
+    date: 44, phase:'p2',
+    section: 'Section 27: Transplant Critical Care',
+    topics: ['Care of Potential Organ Donor', 'Immunology of Transplant', 'Graft vs Host Disease', 'Lung Transplant Care', 'Heart Transplant Care', 'Liver Transplant Care', 'Renal Transplant Care', 'Bone Marrow Transplant Care'],
+    load:'medium'
+  },
+  {
+    date: 45, phase:'p2',
+    section: 'Section 28: Geriatric Critical Care',
+    topics: ['Physiological Impact of Advanced Age', 'Drug Dosing in Elderly', 'Nutrition in Elderly', 'Fluid Therapy in Elderly', 'Sepsis in Elderly', 'EOL Issues in Geriatric Patients', 'Postdischarge Care'],
+    load:'light'
+  },
+  {
+    date: 46, phase:'p2',
+    section: 'Section 29: Ethics, Law & End-of-Life',
+    topics: ['Principles of Ethical Behavior', "Patients' Rights & Responsibilities", 'Dying with Dignity in ICU', 'Law of Contracts', 'Consumer Protection Act for Medical Professionals', 'Sections of Law Pertaining to Medicine', 'Handling Litigation', 'Recording Statements'],
+    load:'light'
+  },
+  {
+    date: 47, phase:'p2',
+    section: '🔁 REVISION: Sections 1–10 (Rapid)',
+    topics: ['Re-read summaries Sec 1–10', 'Identify weak spots', 'Flashcard revision'],
+    load:'medium'
+  },
+  {
+    date: 48, phase:'p2',
+    section: '🔁 REVISION: Sections 11–20 (Rapid)',
+    topics: ['Re-read summaries Sec 11–20', 'Key drug tables', 'Ventilation protocols'],
+    load:'medium'
+  },
+  {
+    date: 49, phase:'p2',
+    section: '🔁 REVISION: Sections 21–29 (Rapid)',
+    topics: ['Re-read summaries Sec 21–29', 'Obstetrics emergencies', 'Toxicology antidotes chart'],
+    load:'medium'
+  },
+  {
+    date: 50, phase:'p2',
+    section: '🧩 MISCELLANEOUS TOPICS DAY 1',
+    topics: ['Rare syndromes review', 'Latest guidelines updates', 'Scoring systems (APACHE, SOFA, SAPS)'],
+    load:'medium'
+  },
+  {
+    date: 51, phase:'p2',
+    section: '🧩 MISCELLANEOUS TOPICS DAY 2 + Phase 2 Wrap',
+    topics: ['Drug interactions in ICU', 'Unusual presentations', 'Quality improvement in ICU', '🎉 Phase 2 complete — Final prep begins!'],
+    load:'light'
+  },
+];
+
+// ============================================================
+// Build and render
+// ============================================================
+const container = document.getElementById('daysList');
+const storage = {}; // In-memory storage
+
+function getKey(dayIndex, type) {
+  return `day_${dayIndex}_${type}`;
+}
+
+function saveData(key, value) {
+  storage[key] = value;
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch(e){}
+}
+
+function loadData(key, defaultVal) {
+  if (storage[key] !== undefined) return storage[key];
+  try {
+    const v = localStorage.getItem(key);
+    if (v !== null) { const p = JSON.parse(v); storage[key] = p; return p; }
+  } catch(e){}
+  return defaultVal;
+}
+
+const today = new Date();
+today.setHours(0,0,0,0);
+
+function getDayOffset() {
+  const start = new Date(2026, 5, 7); // June 7
+  start.setHours(0,0,0,0);
+  const diff = Math.floor((today - start) / 86400000);
+  return diff;
+}
+
+const motivations = [
+  { emoji:'🧠', title:'Brilliant, Dr. Deeksha!', msg:'Every chapter you read today is a life you will save tomorrow in the ICU.' },
+  { emoji:'🔥', title:'You are on Fire!', msg:'Consistency builds mastery. Keep going, Doctor.' },
+  { emoji:'💫', title:'Outstanding Work!', msg:'Another day conquered. The ICU needs intensivists like you.' },
+  { emoji:'🏆', title:'Champion Effort!', msg:'Dr. Deeksha, you are writing your success story one section at a time.' },
+  { emoji:'⚡', title:'Powerhouse!', msg:'Critical care demands critical consistency — and you have both.' },
+  { emoji:'🌟', title:'Star of the ICU!', msg:'Today\'s effort is tomorrow\'s clinical excellence, Dr. Deeksha.' },
+  { emoji:'💪', title:'Unstoppable!', msg:'Section done. Knowledge up. Confidence growing. Keep reading.' },
+  { emoji:'🎯', title:'Bullseye!', msg:'Right on track. The exam has no idea what\'s coming its way.' },
+  { emoji:'🩺', title:'Doctor in the Making!', msg:'MD Anesthesia. DM Critical Care. And now — absolute mastery.' },
+  { emoji:'🌙', title:'Dedicated Scholar!', msg:'While others sleep, Dr. Deeksha Bhardwaj prepares. That\'s the difference.' },
+];
+
+function celebrate(dayIndex) {
+  const m = motivations[dayIndex % motivations.length];
+  document.getElementById('celebrateEmoji').textContent = m.emoji;
+  document.getElementById('celebrateTitle').textContent = m.title;
+  document.getElementById('celebrateMsg').textContent = m.msg;
+  document.getElementById('celebrateBox').classList.add('show');
+  document.getElementById('overlayBg').classList.add('show');
+  setTimeout(closeCelebrate, 3000);
+}
+function closeCelebrate() {
+  document.getElementById('celebrateBox').classList.remove('show');
+  document.getElementById('overlayBg').classList.remove('show');
+}
+
+function updateStats() {
+  let done = 0;
+  phase1Days.forEach((_, i) => {
+    if (loadData(getKey(i, 'done'), false)) done++;
+  });
+  const total = phase1Days.length;
+  document.getElementById('totalDone').textContent = done;
+  const pct = Math.round(done / total * 100);
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  // Days left to July 7
+  const july7 = new Date(2026, 6, 7);
+  july7.setHours(0,0,0,0);
+  const daysLeft = Math.max(0, Math.ceil((july7 - today) / 86400000));
+  document.getElementById('daysLeft').textContent = daysLeft;
+}
+
+function renderDays() {
+  container.innerHTML = '';
+  let currentWeek = -1;
+  const todayOffset = getDayOffset();
+
+  phase1Days.forEach((day, i) => {
+    const d = getDate(day.date);
+    const weekNum = Math.floor(day.date / 7);
+    const isDone = loadData(getKey(i, 'done'), false);
+    const isToday = day.date === todayOffset;
+    const isPhase2 = day.phase === 'p2';
+
+    // Week header
+    if (weekNum !== currentWeek) {
+      currentWeek = weekNum;
+      const wl = document.createElement('div');
+      wl.className = 'week-label' + (isPhase2 ? ' p2-week' : '');
+      const weekStart = getDate(weekNum * 7);
+      const weekEnd = getDate(Math.min(weekNum * 7 + 6, phase1Days[phase1Days.length-1].date));
+      wl.textContent = isPhase2
+        ? `PHASE 2 — WEEK ${weekNum - 4} · ${fmtDate(weekStart)} – ${fmtDate(weekEnd)}`
+        : `PHASE 1 — WEEK ${weekNum + 1} · ${fmtDate(weekStart)} – ${fmtDate(weekEnd)}`;
+      container.appendChild(wl);
+    }
+
+    const card = document.createElement('div');
+    card.className = 'day-card' +
+      (isDone ? ' completed' : '') +
+      (isToday ? ' today-highlight' : '');
+    card.dataset.phase = day.phase;
+    card.dataset.done = isDone ? '1' : '0';
+    card.dataset.index = i;
+    if (isToday) card.id = 'today-card';
+
+    const phaseInfo = phases[day.phase];
+    const loadClass = { light:'load-light', medium:'load-medium', heavy:'load-heavy' }[day.load];
+    const loadLabel = { light:'Light', medium:'Medium', heavy:'Heavy' }[day.load];
+
+    card.innerHTML = `
+      <div class="day-header" onclick="toggleCard(${i})">
+        <div class="day-check" onclick="toggleDone(event, ${i})">${isDone ? '✓' : ''}</div>
+        <div class="day-num">
+          <span>Day ${day.date + 1}</span>
+          <span class="day-date">${fmtDate(d)}</span>
+        </div>
+        <div class="day-topics">
+          <div class="day-section-name">
+            <span class="topic-tag ${phaseInfo.cls}">${phaseInfo.label}</span>
+            ${isToday ? '<span class="topic-tag tag-p1" style="background:rgba(232,122,154,0.15);color:#e87a9a">TODAY</span>' : ''}
+            ${day.section}
+          </div>
+          <div class="day-subtopics">${day.topics.slice(0,3).join(' · ')}${day.topics.length > 3 ? ' + more' : ''}</div>
+        </div>
+        <div class="day-right">
+          <span class="day-load ${loadClass}">${loadLabel}</span>
+          <span class="day-expand">▼</span>
+        </div>
+      </div>
+      <div class="day-body">
+        <div class="checklist" id="checklist-${i}">
+          ${day.topics.map((t, ti) => {
+            const subDone = loadData(getKey(i, 'sub_' + ti), false);
+            return `<div class="checklist-item${subDone ? ' done' : ''}" onclick="toggleSub(${i}, ${ti})">
+              <div class="mini-check">${subDone ? '✓' : ''}</div>
+              <span class="item-text">${t}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <textarea class="note-area" id="note-${i}" placeholder="📝 Add your notes, mnemonics, key points..." oninput="saveNote(${i})">${loadData(getKey(i, 'note'), '')}</textarea>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  updateStats();
+}
+
+function toggleCard(i) {
+  const card = document.querySelector(`[data-index="${i}"]`);
+  card.classList.toggle('open');
+}
+
+function toggleDone(e, i) {
+  e.stopPropagation();
+  const wasDone = loadData(getKey(i, 'done'), false);
+  saveData(getKey(i, 'done'), !wasDone);
+  if (!wasDone) celebrate(i);
+  renderDays();
+}
+
+function toggleSub(i, ti) {
+  const wasDone = loadData(getKey(i, 'sub_' + ti), false);
+  saveData(getKey(i, 'sub_' + ti), !wasDone);
+  // Re-render just the checklist item
+  const item = document.querySelector(`#checklist-${i} .checklist-item:nth-child(${ti+1})`);
+  if (item) {
+    item.classList.toggle('done', !wasDone);
+    item.querySelector('.mini-check').textContent = !wasDone ? '✓' : '';
+  }
+}
+
+function saveNote(i) {
+  const val = document.getElementById('note-' + i).value;
+  saveData(getKey(i, 'note'), val);
+}
+
+function jumpToday() {
+  const el = document.getElementById('today-card');
+  if (el) {
+    el.scrollIntoView({ behavior:'smooth', block:'center' });
+    el.classList.add('open');
+  }
+}
+
+function filterDays(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.day-card').forEach(card => {
+    if (type === 'all') card.style.display = '';
+    else if (type === 'pending') card.style.display = card.dataset.done === '1' ? 'none' : '';
+    else if (type === 'done') card.style.display = card.dataset.done === '0' ? 'none' : '';
+    else if (type === 'phase1') card.style.display = card.dataset.phase !== 'p1' ? 'none' : '';
+    else if (type === 'phase2') card.style.display = card.dataset.phase !== 'p2' ? 'none' : '';
+  });
+}
+
+// INIT
+renderDays();
+</script>
+</body>
+</html>
